@@ -2,6 +2,8 @@
 #include <sys/threads.h>
 #include <monitor/monitorsrv_set_port.h>
 #include <monitor/run_monitor_dqthr.h>
+#include <monitor/get_mdata_q.h>
+#include <monitor/get_mbuffer_q.h>
 #include <phoenix/monitor.h>
 #include <phoenix/errno.h>
 
@@ -9,11 +11,14 @@
 #include "socket_connection.h"
 
 #define MAINTHR_PRIOROTY 5
-#define DQTHR_PRIOROTY 7
+#define DQTHR_PRIOROTY   7
 
 struct {
 	unsigned port;
 	handle_t lock;
+
+	m_data *mdata_qcpy;
+	m_buffer *mbuffer_qcpy;
 
 	char stack[0x1000] __attribute__((aligned(8)));
 } monitorsrv_common;
@@ -23,6 +28,27 @@ static int fail(const char *str)
 {
 	printf("monitorsrv fail: %s\n", str);
 	return EOK;
+}
+
+void monitorsrv_dq_thr()
+{
+	int rtq_size, odq_size;
+	m_buffer *mbuff_ptr;
+
+	for (;;) {
+		if ((rtq_size = get_mdata_q(monitorsrv_common.mdata_qcpy))) {
+			for (int i = 0; i < rtq_size; ++i) {
+				realtime_write(&monitorsrv_common.mdata_qcpy[i]);
+			}
+		}
+
+		if ((odq_size = get_mbuffer_q(monitorsrv_common.mbuffer_qcpy))) {
+			for (int i = 0; i < odq_size; ++i) {
+				mbuff_ptr = &monitorsrv_common.mbuffer_qcpy[i];
+				ondemand_write(mbuff_ptr->buffer, mbuff_ptr->id, mbuff_ptr->size);
+			}
+		}
+	}
 }
 
 void monitorsrvthr()
@@ -64,6 +90,9 @@ void main(int argc, char **argv)
 	printf("monitorsrv: starting server\n");
 	mutexCreate(&monitorsrv_common.lock);
 
+	monitorsrv_common.mdata_qcpy = malloc(sizeof(m_data) * RTQ_MAXSIZE);
+	monitorsrv_common.mbuffer_qcpy = malloc(sizeof(m_buffer) * ODQ_MAXSIZE);
+
 	// Create port and pass it to monitor kernel module
 	if ((err = portCreate(&monitorsrv_common.port)) < 0) {
 		fail("port create");
@@ -83,7 +112,7 @@ void main(int argc, char **argv)
 	}
 
 	// Run data queue thread as part of server
-	beginthread(run_monitor_dqthr, DQTHR_PRIOROTY, monitorsrv_common.stack, sizeof(monitorsrv_common.stack), NULL);
+	beginthread(monitorsrv_dq_thr, DQTHR_PRIOROTY, monitorsrv_common.stack, sizeof(monitorsrv_common.stack), NULL);
 
 	monitorsrvthr();
 }
