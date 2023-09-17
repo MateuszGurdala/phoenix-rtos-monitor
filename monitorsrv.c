@@ -1,7 +1,5 @@
 #include <sys/msg.h>
 #include <sys/threads.h>
-#include <monitor/monitorsrv_set_port.h>
-#include <monitor/run_monitor_dqthr.h>
 #include <monitor/get_mdata_q.h>
 #include <monitor/get_mbuffer_q.h>
 #include <phoenix/monitor.h>
@@ -99,7 +97,6 @@ void main(int argc, char **argv)
 		return err;
 	}
 	printf("monitorsrv: port created: %u\n", monitorsrv_common.port);
-	monitorsrv_set_port(monitorsrv_common.port);
 
 	if ((err = _monitor_file_init()) < 0) {
 		fail("monitor file init");
