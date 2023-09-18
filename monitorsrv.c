@@ -15,8 +15,8 @@ struct {
 	unsigned port;
 	handle_t lock;
 
-	m_data *mdata_qcpy;
-	m_buffer *mbuffer_qcpy;
+	m_data mdata_qcpy[RTQ_MAXSIZE];
+	m_buffer mbuffer_qcpy[ODQ_MAXSIZE];
 
 	char stack[0x1000] __attribute__((aligned(8)));
 } monitorsrv_common;
@@ -31,20 +31,18 @@ static int fail(const char *str)
 void monitorsrv_dq_thr()
 {
 	int rtq_size, odq_size;
-	m_buffer *mbuff_ptr;
 
 	for (;;) {
-		if ((rtq_size = get_mdata_q(monitorsrv_common.mdata_qcpy))) {
-			for (int i = 0; i < rtq_size; ++i) {
+		if ((rtq_size = get_mdata_q(&monitorsrv_common.mdata_qcpy))) {
+			for (int i = 0; i < rtq_size; ++i)
 				realtime_write(&monitorsrv_common.mdata_qcpy[i]);
-			}
 		}
 
-		if ((odq_size = get_mbuffer_q(monitorsrv_common.mbuffer_qcpy))) {
-			for (int i = 0; i < odq_size; ++i) {
-				mbuff_ptr = &monitorsrv_common.mbuffer_qcpy[i];
-				ondemand_write(mbuff_ptr->buffer, mbuff_ptr->id, mbuff_ptr->size);
-			}
+		if ((odq_size = get_mbuffer_q(&monitorsrv_common.mbuffer_qcpy))) {
+			for (int i = 0; i < odq_size; ++i)
+				ondemand_write(monitorsrv_common.mbuffer_qcpy[i].buffer,
+					monitorsrv_common.mbuffer_qcpy[i].id,
+					monitorsrv_common.mbuffer_qcpy[i].size);
 		}
 	}
 }
@@ -52,25 +50,21 @@ void monitorsrv_dq_thr()
 void monitorsrvthr()
 {
 	unsigned long rid;
-	msg_t *msg;
+	msg_t msg;
 
 	priority(MAINTHR_PRIOROTY);
 
 	for (;;) {
-		msg = malloc(sizeof(*msg));
-		if (msgRecv(monitorsrv_common.port, msg, &rid) < 0) {
-			continue;
-		}
+		if (!(msgRecv(monitorsrv_common.port, &msg, &rid) < 0)) {
 
-		switch (msg->type) {
-			case monReadOnDemandData:
-				ondemand_read(&msg->i.raw);
-				break;
-			default: break;
+			switch (msg.type) {
+				case monReadOnDemandData:
+					ondemand_read(&msg.i.raw);
+					break;
+				default: break;
+			}
+			msgRespond(monitorsrv_common.port, &msg, rid);
 		}
-		msgRespond(monitorsrv_common.port, msg, rid);
-
-		free(msg);
 	}
 }
 
@@ -79,9 +73,6 @@ void main(int argc, char **argv)
 	int err = EOK;
 	printf("monitorsrv: starting server\n");
 	mutexCreate(&monitorsrv_common.lock);
-
-	monitorsrv_common.mdata_qcpy = malloc(sizeof(m_data) * RTQ_MAXSIZE);
-	monitorsrv_common.mbuffer_qcpy = malloc(sizeof(m_buffer) * ODQ_MAXSIZE);
 
 	// Create port and pass it to monitor kernel module
 	if ((err = portCreate(&monitorsrv_common.port)) < 0) {
