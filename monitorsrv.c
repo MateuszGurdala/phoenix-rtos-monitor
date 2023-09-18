@@ -63,14 +63,6 @@ void monitorsrvthr()
 		}
 
 		switch (msg->type) {
-			case monRealTimeData:
-				realtime_write(msg->i.data);
-				break;
-			case monOnDemandData:
-				if (msg->i.data != NULL) {
-					ondemand_write(msg->i.data, msg->i.mbuff_data.id, msg->i.mbuff_data.size);
-				}
-				break;
 			case monReadOnDemandData:
 				ondemand_read(&msg->i.raw);
 				break;
