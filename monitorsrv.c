@@ -13,7 +13,6 @@
 
 struct {
 	unsigned port;
-	handle_t lock;
 
 	m_data mdata_qcpy[RTQ_MAXSIZE];
 	m_buffer mbuffer_qcpy[ODQ_MAXSIZE];
@@ -72,7 +71,6 @@ void main(int argc, char **argv)
 {
 	int err = EOK;
 	printf("monitorsrv: starting server\n");
-	mutexCreate(&monitorsrv_common.lock);
 
 	// Create port and pass it to monitor kernel module
 	if ((err = portCreate(&monitorsrv_common.port)) < 0) {
