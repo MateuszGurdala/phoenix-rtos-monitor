@@ -1,7 +1,7 @@
 #include <sys/msg.h>
 #include <sys/threads.h>
 #include <monitor/get_mdata_q.h>
-#include <monitor/get_mbuffer_q.h>
+#include <monitor/empty_full_mbuffer.h>
 #include <phoenix/monitor.h>
 #include <phoenix/errno.h>
 
@@ -15,7 +15,12 @@ struct {
 	unsigned port;
 
 	m_data mdata_qcpy[RTQ_MAXSIZE];
-	m_buffer mbuffer_qcpy[ODQ_MAXSIZE];
+
+	struct {
+#define MBUFF(NAME, TYPE, SIZE) m_data NAME[SIZE];
+		MBUFFERS()
+#undef MBUFF
+	} odq_mbuffer_cpy;
 
 	char stack[0x1000] __attribute__((aligned(8)));
 } monitorsrv_common;
@@ -27,21 +32,32 @@ static int fail(const char *str)
 	return EOK;
 }
 
+m_data *get_odq_mbuffer_cpy(unsigned ebuff)
+{
+	switch (ebuff) {
+#define MBUFF(NAME, TYPE, SIZE) \
+	case mbuff_##NAME: return &monitorsrv_common.odq_mbuffer_cpy.NAME;
+		MBUFFERS()
+#undef MBUFF
+		default: return NULL;
+	}
+}
+
 void monitorsrv_dq_thr()
 {
-	int rtq_size, odq_size;
+	int rtq_size;
+	int mbuff_size;
+	m_data *mbuffer;
 
 	for (;;) {
-		if ((rtq_size = get_mdata_q(&monitorsrv_common.mdata_qcpy))) {
+		if ((rtq_size = get_mdata_q(&monitorsrv_common.mdata_qcpy)))
 			for (int i = 0; i < rtq_size; ++i)
 				realtime_write(&monitorsrv_common.mdata_qcpy[i]);
-		}
 
-		if ((odq_size = get_mbuffer_q(&monitorsrv_common.mbuffer_qcpy))) {
-			for (int i = 0; i < odq_size; ++i)
-				ondemand_write(monitorsrv_common.mbuffer_qcpy[i].buffer,
-					monitorsrv_common.mbuffer_qcpy[i].id,
-					monitorsrv_common.mbuffer_qcpy[i].size);
+		for (int ebuff = 0; ebuff < mbuff_end; ++ebuff) {
+			mbuffer = get_odq_mbuffer_cpy(ebuff);
+			if ((mbuff_size = empty_full_mbuffer(ebuff, mbuffer)) > 0)
+				ondemand_write(mbuffer, ebuff, mbuff_size);
 		}
 	}
 }
@@ -55,7 +71,6 @@ void monitorsrvthr()
 
 	for (;;) {
 		if (!(msgRecv(monitorsrv_common.port, &msg, &rid) < 0)) {
-
 			switch (msg.type) {
 				case monReadOnDemandData:
 					ondemand_read(&msg.i.raw);
