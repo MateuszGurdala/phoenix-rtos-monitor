@@ -9,7 +9,7 @@
 		- naming convention: [mtype]_to_str
 	II. Allocate enough memory at *attr1 and write a string in it
 	III. Make function return size of the string
-	IV. Add function to switch-case in mtype_to_str() 
+	IV. Add function to switch-case in mtype_to_str()
 */
 
 int msg_to_str(char **write_data, m_data *mdata)
@@ -24,7 +24,8 @@ int scheduleinfo_to_str(char **write_data, m_data *mdata)
 {
 	int data_length = 4 * sizeof(unsigned long) + 3 * sizeof(char) + 1;
 	*write_data = malloc(data_length);
-	sprintf(*write_data, "%lu|%lu-%lu|%lu", mdata->data.schedule_info.pid,
+	sprintf(*write_data, "%lu|%lu-%lu|%lu",
+		mdata->data.schedule_info.pid,
 		mdata->data.schedule_info.tid,
 		mdata->data.schedule_info.npid,
 		mdata->data.schedule_info.ntid);
