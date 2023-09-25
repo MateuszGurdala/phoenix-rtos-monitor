@@ -12,24 +12,23 @@
 #define DQTHR_PRIOROTY   7
 
 struct {
-	unsigned port;
-
-	m_data mdata_qcpy[RTQ_MAXSIZE];
-
 	struct {
 #define MBUFF(NAME, TYPE, SIZE) m_data NAME[SIZE];
 		MBUFFERS()
 #undef MBUFF
 	} odq_mbuffer_cpy;
 
+	unsigned port;
+	m_data mdata_qcpy[RTQ_MAXSIZE];
+
 	char stack[0x1000] __attribute__((aligned(8)));
 } monitorsrv_common;
 
 
-static int fail(const char *str)
+static int fail(const char *str, int err)
 {
 	printf("monitorsrv fail: %s\n", str);
-	return EOK;
+	return err;
 }
 
 m_data *get_odq_mbuffer_cpy(unsigned ebuff)
@@ -72,7 +71,7 @@ void monitorsrvthr()
 	for (;;) {
 		if (!(msgRecv(monitorsrv_common.port, &msg, &rid) < 0)) {
 			switch (msg.type) {
-				case monReadOnDemandData:
+				case mtRead:
 					ondemand_read(&msg.i.raw);
 					break;
 				default: break;
@@ -85,24 +84,20 @@ void monitorsrvthr()
 void main(int argc, char **argv)
 {
 	int err = EOK;
+
 	printf("monitorsrv: starting server\n");
 
 	// Create port and pass it to monitor kernel module
-	if ((err = portCreate(&monitorsrv_common.port)) < 0) {
-		fail("port create");
-		return err;
-	}
+	if ((err = portCreate(&monitorsrv_common.port)) < 0)
+		return fail("port create", err);
+
 	printf("monitorsrv: port created: %u\n", monitorsrv_common.port);
 
-	if ((err = _monitor_file_init()) < 0) {
-		fail("monitor file init");
-		return err;
-	}
+	if ((err = _monitor_file_init(monitorsrv_common.port)) < 0)
+		return fail("monitor file init", err);
 
-	if ((err = _sock_conn_init()) < 0) {
-		fail("monitor socket init");
-		return err;
-	}
+	if ((err = _sock_conn_init()) < 0)
+		return fail("monitor socket init", err);
 
 	// Run data queue thread as part of server
 	beginthread(monitorsrv_dq_thr, DQTHR_PRIOROTY, monitorsrv_common.stack, sizeof(monitorsrv_common.stack), NULL);
