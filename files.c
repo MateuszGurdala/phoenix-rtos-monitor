@@ -36,7 +36,7 @@ int ondemand_write(void *buffer, unsigned ebuff, int size)
 	int fildes;
 	int data_length = 0;
 	char *file_path = NULL;
-	char *write_data = NULL;
+	char write_data[RT_MSG_LENGTH];
 
 	if ((file_path = _get_file_path(_get_buffer_file(ebuff))) == NULL) {
 		return -ENOMEM;
@@ -52,9 +52,8 @@ int ondemand_write(void *buffer, unsigned ebuff, int size)
 
 	for (size_t i = 0; i < size; ++i) {
 		data_length = mdata_to_str(&write_data, &((m_data *)buffer)[i]);
-		if (write_data != NULL && data_length > 0) {
+		if (data_length > 0) {
 			sys_write(fildes, write_data, data_length);
-			free(write_data);
 		}
 		else {
 			sys_close(fildes);

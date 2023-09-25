@@ -23,7 +23,7 @@ int _socksleep(int sec)
 
 int realtime_write(void *data)
 {
-	char *write_data = NULL;
+	char write_data[RT_MSG_LENGTH];
 	int data_size;
 	int send;
 
@@ -32,11 +32,9 @@ int realtime_write(void *data)
 		if ((send = sys_sendto(sock_conn_common.sock, write_data, data_size, 0, NULL, 0)) < 0) {
 			// Lost connection, try to reconnect
 			sock_conn_common.can_send = 0;
-			free(write_data);
 			mutexUnlock(sock_conn_common.lock);
 			return send;
 		}
-		free(write_data);
 	}
 
 	return EOK;
