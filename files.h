@@ -10,11 +10,11 @@
 
 #define FILE_MAXSIZE 1024
 
-#define DIRPATH     "/monitor"
-#define DIRPATH_LEN 9
-#define COMMAND     "nc 10.0.2.2:3713 <"
-#define COMMAND_LEN 20
-#define PORTFILE "port"
+#define DIRPATH      "/monitor"
+#define DIRPATH_LEN  9
+#define COMMAND      "nc 10.0.2.2:3713 <"
+#define COMMAND_LEN  20
+#define PORTFILE     "port"
 #define PORTFILE_LEN 5
 
 extern int _monitor_file_init(unsigned port);
