@@ -14,8 +14,10 @@
 #define DIRPATH_LEN 9
 #define COMMAND     "nc 10.0.2.2:3713 <"
 #define COMMAND_LEN 20
+#define PORTFILE "port"
+#define PORTFILE_LEN 5
 
-extern int _monitor_file_init();
+extern int _monitor_file_init(unsigned port);
 
 extern int ondemand_write(void *buffer, unsigned ebuff, int size);
 

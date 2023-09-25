@@ -96,9 +96,23 @@ int ondemand_read(char *file_name)
 	return EOK;
 }
 
-int _monitor_file_init()
+int _monitor_file_init(unsigned port)
 {
+	int fildes;
+	char port_str[2];
+	char file_path[DIRPATH_LEN + PORTFILE_LEN];
+
 	// Create directory for all monitoring data files
 	mkdir(DIRPATH, 0777);
+
+	// Save monitor server port to file
+	sprintf(file_path, "%s/%s", DIRPATH, PORTFILE);
+	sprintf(port_str, "%u", port);
+
+	fildes = sys_open(file_path, O_CREAT);
+	sys_write(fildes, port_str, sizeof(port_str));
+
+	sys_close(fildes);
+
 	return EOK;
 }
