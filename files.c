@@ -73,6 +73,7 @@ int ondemand_read(char *file_name)
 {
 	char *file_path = NULL;
 	char *command = NULL;
+	int fildes;
 
 	if ((file_path = _get_file_path(file_name)) == NULL) {
 		return -ENOMEM;
@@ -88,9 +89,14 @@ int ondemand_read(char *file_name)
 	// Run netcat file transfer
 	system(command);
 
+	// Clear file data
+	fildes = sys_open(file_path, O_TRUNC);
+	sys_ftruncate(fildes, 0);
+
 	// Cleanup
 	free(command);
 	free(file_path);
+	sys_close(fildes);
 
 	return EOK;
 }
