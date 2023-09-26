@@ -104,7 +104,7 @@ int ondemand_read(char *file_name)
 int _monitor_file_init(unsigned port)
 {
 	int fildes;
-	char port_str[2];
+	char port_str[4];  // Accepts ports up to 999
 	char file_path[DIRPATH_LEN + PORTFILE_LEN];
 
 	// Create directory for all monitoring data files
