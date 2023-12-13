@@ -20,15 +20,13 @@ int msg_to_str(char *write_data, m_data *mdata)
 
 int scheduleinfo_to_str(char *write_data, m_data *mdata)
 {
-	int data_length = 4 * sizeof(unsigned long) + 3 * sizeof(char) + 1;
-
 	sprintf(write_data, "%lu|%lu-%lu|%lu",
 		mdata->data.schedule_info.pid,
 		mdata->data.schedule_info.tid,
 		mdata->data.schedule_info.npid,
 		mdata->data.schedule_info.ntid);
 
-	return data_length;
+	return 4 * sizeof(unsigned long) + 3 * sizeof(char) + 1;
 }
 
 int mtype_to_str(char *write_data, m_data *mdata)
