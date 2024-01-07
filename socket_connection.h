@@ -10,4 +10,6 @@ extern int _sock_conn_init();
 
 extern int realtime_write(void *data);
 
+extern void sock_thr();
+
 #endif

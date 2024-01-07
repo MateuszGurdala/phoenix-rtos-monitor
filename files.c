@@ -16,14 +16,14 @@ char *_get_buffer_file(unsigned ebuff)
 		default: return NULL;
 	}
 }
+
 char *_get_file_path(char *file_name)
 {
 	char *file_path = NULL;
 
 	// Alloc memory space and concat file path
-	if ((file_path = malloc(sizeof(char) * (DIRPATH_LEN + FILE_MAX_LENGTH + 1))) == NULL) {  // +1 for /
+	if ((file_path = malloc(sizeof(char) * (DIRPATH_LEN + FILE_MAX_LENGTH + 1))) == NULL) // +1 for /
 		return NULL;
-	}
 
 	sprintf(file_path, "%s/%s", DIRPATH, file_name);
 
@@ -38,28 +38,22 @@ int ondemand_write(void *buffer, unsigned ebuff, int size)
 	char *file_path = NULL;
 	char write_data[RT_MSG_LENGTH];
 
-	if ((file_path = _get_file_path(_get_buffer_file(ebuff))) == NULL) {
+	if ((file_path = _get_file_path(_get_buffer_file(ebuff))) == NULL)
 		return -ENOMEM;
-	}
 
 	// If file exists open it in APPEND mode, otherwise create it
 	if ((fildes = sys_open(file_path, O_APPEND)) < 0) {
 		sys_close(sys_open(file_path, O_CREAT));
 		if ((fildes = sys_open(file_path, O_APPEND)) < 0) {
+			free(file_path);
 			return fildes;
 		}
 	}
 
 	for (size_t i = 0; i < size; ++i) {
-		data_length = mdata_to_str(&write_data, &((m_data *)buffer)[i]);
-		if (data_length > 0) {
+		data_length = mdata_to_str(&write_data, &((m_data *) buffer)[i]);
+		if (data_length > 0)
 			sys_write(fildes, write_data, data_length);
-		}
-		else {
-			sys_close(fildes);
-			free(file_path);
-			return -ENOWRDT;
-		}
 	}
 
 	// Cleanup
@@ -75,15 +69,14 @@ int ondemand_read(char *file_name)
 	char *command = NULL;
 	int fildes;
 
-	if ((file_path = _get_file_path(file_name)) == NULL) {
+	if ((file_path = _get_file_path(file_name)) == NULL)
 		return -ENOMEM;
-	}
 
 	// Create command string
 	command = malloc(sizeof(char) * (DIRPATH_LEN + FILE_MAX_LENGTH + COMMAND_LEN + 1));
-	if (command == NULL) {
+	if (command == NULL)
 		return -ENOMEM;
-	}
+
 	sprintf(command, "%s %s", COMMAND, file_path);
 
 	// Run netcat file transfer

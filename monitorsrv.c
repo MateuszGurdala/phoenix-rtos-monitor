@@ -10,6 +10,7 @@
 
 #define MAINTHR_PRIOROTY 5
 #define DQTHR_PRIOROTY   7
+#define SOCKTHR_PRIOROTY 4
 
 struct {
 	struct {
@@ -21,7 +22,8 @@ struct {
 	unsigned port;
 	m_data mdata_qcpy[RTQ_MAXSIZE];
 
-	char stack[0x1000] __attribute__((aligned(8)));
+	char dq_stack[0x1000] __attribute__((aligned(8)));
+	char sock_stack[0x1000] __attribute__((aligned(8)));
 } monitorsrv_common;
 
 
@@ -61,7 +63,7 @@ void monitorsrv_dq_thr()
 	}
 }
 
-void monitorsrvthr()
+void monitorsrv_thr()
 {
 	unsigned long rid;
 	msg_t msg;
@@ -88,19 +90,20 @@ void main(int argc, char **argv)
 	printf("monitorsrv: starting server\n");
 
 	// Create port and pass it to monitor kernel module
-	if ((err = portCreate(&monitorsrv_common.port)) < 0)
+	if ((err = portCreate(&monitorsrv_common.port)) != EOK)
 		return fail("port create", err);
 
 	printf("monitorsrv: port created: %u\n", monitorsrv_common.port);
 
-	if ((err = _monitor_file_init(monitorsrv_common.port)) < 0)
+	if ((err = _monitor_file_init(monitorsrv_common.port)) != EOK)
 		return fail("monitor file init", err);
 
-	if ((err = _sock_conn_init()) < 0)
+	if ((err = _sock_conn_init()) != EOK)
 		return fail("monitor socket init", err);
 
 	// Run data queue thread as part of server
-	beginthread(monitorsrv_dq_thr, DQTHR_PRIOROTY, monitorsrv_common.stack, sizeof(monitorsrv_common.stack), NULL);
+	beginthread(monitorsrv_dq_thr, DQTHR_PRIOROTY, monitorsrv_common.dq_stack, sizeof(monitorsrv_common.dq_stack), NULL);
+	beginthread(sock_thr, SOCKTHR_PRIOROTY, monitorsrv_common.sock_stack, sizeof(monitorsrv_common.sock_stack), NULL);
 
-	monitorsrvthr();
+	monitorsrv_thr();
 }

@@ -8,8 +8,7 @@
 #define O_CREAT  0x0100
 #define O_TRUNC  0x0200
 
-#define FILE_MAXSIZE 1024
-
+#define FILE_MAX_LENGTH 10
 #define DIRPATH      "/monitor"
 #define DIRPATH_LEN  9
 #define COMMAND      "nc 10.0.2.2:3713 <"
