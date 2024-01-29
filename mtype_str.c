@@ -34,13 +34,10 @@ int mtype_to_str(char *write_data, m_data *mdata)
 	switch (mdata->mtype) {
 		case mdt_msg:
 			return msg_to_str(write_data, mdata);
-			break;
 		case mdt_scheduleinfo:
 			return scheduleinfo_to_str(write_data, mdata);
-			break;
 		default:
 			return 0;
-			break;
 	}
 }
 
